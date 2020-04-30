@@ -4,10 +4,6 @@ The reason for this is that it didn't work for me and rather than fix his
 implementation I decided to completely re-write it for learning purposes.
 """
 
-import sys
-from os.path import dirname
-from os.path import abspath
-
 
 class Downloader:
     def __init__(self):

@@ -23,5 +23,6 @@ class TestDownloader(unittest.TestCase):
         self.downloader.download_files(list_images)
 
 
+
 if __name__ == '__main__':
     unittest.main()

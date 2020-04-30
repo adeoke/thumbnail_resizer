@@ -8,20 +8,6 @@ import sys
 from os.path import dirname
 from os.path import abspath
 
-# import urllib.request
-
-# get the directory of this file
-directory = dirname(dirname(__file__))
-
-# get the absolute path for this directory
-full_dir_path = abspath(directory)
-
-# add this directory to the end of the path
-sys.path.append(full_dir_path)
-
-
-# print(sys.path)
-
 
 class Downloader:
     def __init__(self):

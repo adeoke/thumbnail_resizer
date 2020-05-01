@@ -11,4 +11,4 @@ print(incoming_path)
 def clean_images_dir(c, incomming_dir=None):
     """ cleans the contents of the incoming images directory """
     if incomming_dir is None:
-        c.run('rm -rf {}'.format(incoming_path))
+        c.run('rm -rfv {}/*'.format(incoming_path))

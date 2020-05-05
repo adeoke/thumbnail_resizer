@@ -5,6 +5,12 @@ implementation I decided to completely re-write it for learning purposes.
 """
 import os, ssl
 import urllib.request
+import logging
+import time
+import PIL
+from PIL import Image
+
+logging.basicConfig(filename='logfile.log', level=logging.DEBUG)
 
 
 class Downloader:
@@ -45,7 +51,7 @@ class Downloader:
         ]
         return li
 
-    def download_files(self, li):
+    def download_images(self, li):
         """
         :param li: list of images to scan over
         :return: no return, just perform the action
@@ -59,10 +65,70 @@ class Downloader:
         if not li:
             return 'list is empty'
 
+        # check the directory existence before downloading
+        os.makedirs(self.input_dir, exist_ok=True)
+
+        logging.info('beginning image download')
+
+        start_time = time.perf_counter()
+
         for index, url in enumerate(li):
             urllib.request.urlretrieve(url,
                                        "{}/image-{}.jpg".format(
                                            self.input_dir, index))
+        end_time = time.perf_counter()
 
-    def delete_files(self, li):
-        pass
+        logging.info("downloaded {} images in {} seconds".format(len(li),
+                                                                 end_time - start_time))
+
+    def perform_resizing(self):
+        """resize the images from in the incoming directory"""
+        if not os.listdir(self.input_dir):
+            return
+
+        os.makedirs(self.output_dir, exist_ok=True)
+
+        logging.info('beginning image resizing')
+        target_sizes = [32, 64, 200]
+        num_images = 0
+        # num_images = len(os.listdir(self.input_dir))
+
+        start = time.perf_counter()
+        for image_filename in os.listdir(self.input_dir):
+            for image_width in target_sizes:
+                with Image.open(
+                        os.path.join(self.input_dir, image_filename)) as img:
+                    print(img.height)
+                    print(img.width)
+                    new_height = int((image_width / img.width) * img.height)
+                    print('*****new details*****')
+                    print(new_height)
+                    print(image_width)
+
+                    img = img.resize((image_width, new_height),
+                                     PIL.Image.LANCZOS)
+                    num_images += 1
+                    file_extension = os.path.splitext(image_filename)[-1]
+                    filename = os.path.splitext(image_filename)[0]
+                    new_filename = '{}_w_{}_h_{}{}'.format(filename,
+                                                           int(image_width),
+                                                           int(new_height),
+                                                           file_extension)
+                    print(os.path.join(self.output_dir, new_filename))
+                    print('---\n\n')
+                    img.save(os.path.join(self.output_dir, new_filename))
+            os.remove(os.path.join(self.input_dir, image_filename))
+        end = time.perf_counter()
+
+        logging.info("created {} thumbnails in {} seconds".format(num_images,
+                                                                  end - start))
+
+    def make_thumbnails(self, img_url_list):
+        logging.info("START make_thumbnails")
+        start = time.perf_counter()
+
+        self.download_images(img_url_list)
+        self.perform_resizing()
+
+        end = time.perf_counter()
+        logging.info("END make_thumbnails in {} seconds".format(end - start))

@@ -9,8 +9,10 @@ import logging
 import time
 import PIL
 from PIL import Image
+import threading
 
-logging.basicConfig(filename='logfile.log', level=logging.DEBUG)
+FORMAT = "[%(threadName)s, %(asctime)s, %(levelname)s] %(message)s"
+logging.basicConfig(filename='logfile.log', level=logging.DEBUG, format=FORMAT)
 
 
 class Downloader:
@@ -18,6 +20,8 @@ class Downloader:
         self.home_dir = home_dir
         self.input_dir = self.home_dir + os.path.sep + 'incoming'
         self.output_dir = self.home_dir + os.path.sep + 'outgoing'
+        self.downloaded_bytes = 0
+        self.dl_lock = threading.Lock()
 
     @staticmethod
     def image_list():
@@ -51,6 +55,19 @@ class Downloader:
         ]
         return li
 
+    def download_image(self, url, index):
+        logging.info('downloading image at URL ' + url)
+        dest_path = "{}/image-{}.jpg".format(self.input_dir, index)
+        urllib.request.urlretrieve(url, dest_path)
+        img_size = os.path.getsize(dest_path)
+
+        #  prevent any other thread from modifying the downloaded_bytes var.
+        with self.dl_lock:
+            self.downloaded_bytes += img_size
+
+        logging.info(
+            "image [{} bytes] saved to: {}".format(img_size, dest_path))
+
     def download_images(self, li):
         """
         :param li: list of images to scan over
@@ -72,10 +89,17 @@ class Downloader:
 
         start_time = time.perf_counter()
 
+        threads = []
+
         for index, url in enumerate(li):
-            urllib.request.urlretrieve(url,
-                                       "{}/image-{}.jpg".format(
-                                           self.input_dir, index))
+            thread = threading.Thread(target=self.download_image,
+                                      args=(url, index))
+            thread.start()
+            threads.append(thread)
+
+        for t in threads:
+            t.join()
+
         end_time = time.perf_counter()
 
         logging.info("downloaded {} images in {} seconds".format(len(li),
@@ -91,19 +115,13 @@ class Downloader:
         logging.info('beginning image resizing')
         target_sizes = [32, 64, 200]
         num_images = 0
-        # num_images = len(os.listdir(self.input_dir))
 
         start = time.perf_counter()
         for image_filename in os.listdir(self.input_dir):
             for image_width in target_sizes:
                 with Image.open(
                         os.path.join(self.input_dir, image_filename)) as img:
-                    print(img.height)
-                    print(img.width)
                     new_height = int((image_width / img.width) * img.height)
-                    print('*****new details*****')
-                    print(new_height)
-                    print(image_width)
 
                     img = img.resize((image_width, new_height),
                                      PIL.Image.LANCZOS)
@@ -132,3 +150,8 @@ class Downloader:
 
         end = time.perf_counter()
         logging.info("END make_thumbnails in {} seconds".format(end - start))
+
+
+if __name__ == '__main__':
+    downloader = Downloader()
+    downloader.make_thumbnails(Downloader.image_list())

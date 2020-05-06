@@ -6,6 +6,7 @@ current_dir = dirname(__file__)
 incoming_path = os.path.join(current_dir, 'incoming')
 outgoing_path = os.path.join(current_dir, 'outgoing')
 test_root = os.path.join(dirname(__file__), 'tests')
+app_root = os.path.join(dirname(__file__), 'app')
 print(test_root)
 
 
@@ -23,7 +24,13 @@ def clean_outgoing_images_dir(c, outgoing_dir=None):
         c.run('rm -rfv {}/*'.format(outgoing_path))
 
 
-@task(help={'directory' : 'Name of the test directory to run tests from'})
+@task(help={'directory': 'Name of the test directory to run tests from'})
 def run_unit_tests(c, directory=test_root):
     """Runs all the tests"""
     c.run("python -m unittest discover {} 'test_*.py'".format(directory))
+
+
+@task
+def run_main(c):
+    """Runs the main module"""
+    c.run("python {}/thumbnail_resizer.py".format(app_root))
